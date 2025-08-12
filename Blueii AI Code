@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buleii AI - Voice Enabled Assistant</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========== GLOBAL STYLES ========== */
+        :root {
+            --primary-blue: #2563eb;
+            --dark-blue: #1e40af;
+            --light-blue: #93c5fd;
+            --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            --text-dark: #1e293b;
+            --text-light: #f8fafc;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        /* ========== CONTAINER & HEADER ========== */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            color: var(--primary-blue);
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 24px;
+            background: linear-gradient(to right, var(--primary-blue), var(--dark-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        /* ========== CHAT INTERFACE ========== */
+        #chat-container {
+            height: 65vh;
+            overflow-y: auto;
+            padding: 25px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+            backdrop-filter: blur(8px);
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 10px;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: var(--light-blue);
+            border-radius: 10px;
+        }
+
+        /* ========== MESSAGE STYLES ========== */
+        .message {
+            margin-bottom: 20px;
+            max-width: 80%;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: messageIn 0.3s forwards;
+            animation-delay: 0.1s;
+        }
+
+        @keyframes messageIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background: var(--primary-blue);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 18px 18px 0 18px;
+            margin-left: auto;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            transition: var(--transition);
+        }
+
+        .user-message:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .ai-message {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 18px 18px 18px 0;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .ai-message:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-message pre {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .ai-message code {
+            background: #f1f5f9;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        /* ========== TYPING INDICATOR ========== */
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 18px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            color: var(--text-dark);
+        }
+
+        .typing-dots {
+            display: flex;
+            margin-left: 8px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        /* ========== INPUT AREA ========== */
+        #input-area {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+        }
+
+        #input-area:focus-within {
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: var(--text-dark);
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        #user-input:focus {
+            background: white;
+            box-shadow: 0 0 0 2px var(--light-blue);
+        }
+
+        #send-button, #file-upload, #voice-button {
+            padding: 0;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary-blue);
+            color: white;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        #send-button:hover, #file-upload:hover, #voice-button:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+
+        #file-upload {
+            position: relative;
+            overflow: hidden;
+            background: white;
+            color: var(--primary-blue);
+            border: 2px solid var(--light-blue);
+        }
+
+        #file-upload i, #voice-button i {
+            font-size: 20px;
+        }
+
+        #file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* Voice button active state */
+        #voice-button.listening {
+            background: #dc2626;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* ========== UTILITY CLASSES ========== */
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 768px) {
+            #chat-container {
+                height: 60vh;
+                padding: 15px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            #input-area {
+                flex-direction: column;
+            }
+            
+            #user-input {
+                width: 100%;
+            }
+            
+            #send-button, #file-upload, #voice-button {
+                width: 100%;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon pulse">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h1>Buleii AI</h1>
+            </div>
+            <button id="mode-toggle" class="btn-icon">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+        
+        <div id="chat-container"></div>
+        
+        <div id="input-area">
+            <button id="file-upload" title="Upload File">
+                <i class="fas fa-paperclip"></i>
+                <input type="file" id="file-input" accept=".pdf,.txt,.docx,.csv">
+            </button>
+            <input type="text" id="user-input" placeholder="Ask Buleii anything or click mic..." autocomplete="off">
+            <button id="voice-button" title="Voice Input">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="send-button" title="Send Message">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ======================
+        // Configuration
+        // ======================
+        const SYSTEM_PROMPT = "You are Buleii, a helpful AI assistant. Provide detailed, accurate responses. Format answers with Markdown when appropriate (code blocks, lists, bold/italic).";
+        const INITIAL_MESSAGE = `**Hello!** I'm Buleii, your AI assistant. 🌟\n\nI can help with:\n- Answering questions\n- Explaining concepts\n- Generating code\n- Analyzing documents\n\nTry clicking the <i class="fas fa-microphone"></i> to speak to me!`;
+        
+        // ======================
+        // DOM Elements
+        // ======================
+        const chatContainer = document.getElementById("chat-container");
+        const userInput = document.getElementById("user-input");
+        const sendButton = document.getElementById("send-button");
+        const voiceButton = document.getElementById("voice-button");
+        const fileInput = document.getElementById("file-input");
+        const modeToggle = document.getElementById("mode-toggle");
+
+        // ======================
+        // State Management
+        // ======================
+        let conversationHistory = [
+            { role: "assistant", content: INITIAL_MESSAGE }
+        ];
+        let recognition = null;
+        let isListening = false;
+
+        // ======================
+        // Initialization
+        // ======================
+        // Render initial message
+        renderMessages();
+
+        // Initialize speech recognition if available
+        initSpeechRecognition();
+
+        // ======================
+        // Event Listeners
+        // ======================
+        // Send message on button click or Enter key
+        sendButton.addEventListener("click", sendMessage);
+        userInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        // File upload handler
+        fileInput.addEventListener("change", handleFileUpload);
+
+        // Dark/light mode toggle
+        modeToggle.addEventListener("click", toggleDarkMode);
+
+        // Voice button click
+        voiceButton.addEventListener("click", toggleVoiceInput);
+
+        // ======================
+        // Core Functions
+        // ======================
+        function initSpeechRecognition() {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    recognition = new SpeechRecognition();
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'en-US'; // Default language
+
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        userInput.value = transcript;
+                        sendMessage();
+                    };
+
+                    recognition.onerror = (event) => {
+                        console.error('Speech recognition error', event.error);
+                        addMessage('ai', `Sorry, I couldn't hear you. Error: ${event.error}`);
+                        stopListening();
+                    };
+
+                    recognition.onend = () => {
+                        if (isListening) {
+                            startListening(); // Restart listening if still active
+                        }
+                    };
+                } else {
+                    console.warn('Speech recognition not supported');
+                    voiceButton.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Speech recognition initialization error', e);
+                voiceButton.style.display = 'none';
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        function startListening() {
+            if (recognition) {
+                try {
+                    recognition.start();
+                    voiceButton.classList.add('listening');
+                    voiceButton.title = 'Listening... Click to stop';
+                    isListening = true;
+                    addMessage('ai', 'I\'m listening... Speak now!');
+                } catch (e) {
+                    console.error('Speech recognition start error', e);
+                    addMessage('ai', 'Sorry, microphone access is blocked. Please check permissions.');
+                }
+            }
+        }
+
+        function stopListening() {
+            if (recognition) {
+                recognition.stop();
+                voiceButton.classList.remove('listening');
+                voiceButton.title = 'Voice Input';
+                isListening = false;
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+            const icon = modeToggle.querySelector("i");
+            if (document.body.classList.contains("dark-mode")) {
+                icon.classList.replace("fa-moon", "fa-sun");
+                document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)');
+                document.documentElement.style.setProperty('--text-dark', '#f8fafc');
+                document.documentElement.style.setProperty('--text-light', '#1e293b');
+            } else {
+                icon.classList.replace("fa-sun", "fa-moon");
+                document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)');
+                document.documentElement.style.setProperty('--text-dark', '#1e293b');
+                document.documentElement.style.setProperty('--text-light', '#f8fafc');
+            }
+        }
+
+        function renderMessages() {
+            chatContainer.innerHTML = '';
+            conversationHistory.forEach((msg, index) => {
+                const messageDiv = document.createElement("div");
+                messageDiv.className = `message ${msg.role}-message`;
+                
+                if (msg.role === "assistant") {
+                    messageDiv.innerHTML = marked.parse(msg.content);
+                } else {
+                    messageDiv.textContent = msg.content;
+                }
+                
+                chatContainer.appendChild(messageDiv);
+            });
+            scrollToBottom();
+        }
+
+        function addMessage(role, content) {
+            conversationHistory.push({ role, content });
+            renderMessages();
+            
+            // Speak AI responses
+            if (role === 'assistant') {
+                speakResponse(content);
+            }
+        }
+
+        function speakResponse(text) {
+            // Remove markdown formatting for speech
+            const cleanText = text.replace(/[*_`#\[\]]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // Configure voice
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.lang.includes('en')) || voices[0];
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showTyping() {
+            const typingDiv = document.createElement("div");
+            typingDiv.className = "message ai-message";
+            typingDiv.id = "typing-indicator";
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    Buleii is thinking
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            const typingDiv = document.getElementById("typing-indicator");
+            if (typingDiv) typingDiv.remove();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // ======================
+        // Message Handling
+        // ======================
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage("user", message);
+            userInput.value = "";
+            showTyping();
+
+            // Simulate API delay
+            setTimeout(() => {
+                hideTyping();
+                const response = generateAIResponse(message);
+                addMessage("assistant", response);
+            }, 1000 + Math.random() * 1500);
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            addMessage("user", `[Uploaded File: ${file.name}]`);
+            showTyping();
+
+            setTimeout(() => {
+                hideTyping();
+                const response = `
+**📄 File Received:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+
+I can help you with this ${file.name.split('.').pop().toUpperCase()} file. In a full implementation, I would:
+
+1. **Extract text** from the document
+2. **Analyze content** for key information
+3. **Answer questions** about the file
+4. **Generate summaries** of important points
+
+*Try asking questions about files in the chat!*
+                `;
+                addMessage("assistant", response);
+            }, 2000);
+        }
+
+        // ======================
+        // AI Response Generation
+        // ======================
+        function generateAIResponse(userMessage) {
+            const lowerMsg = userMessage.toLowerCase();
+            
+            if (/what is coding|explain programming|how to code/.test(lowerMsg)) {
+                return `**Understanding Coding**\n\nCoding is the process of creating instructions for computers using programming languages. Here's a comprehensive explanation:\n\n` +
+                       `### Core Concepts:\n` +
+                       `1. **Variables**: Store data values (\`let x = 5\`)\n` +
+                       `2. **Functions**: Reusable code blocks\n` +
+                       `3. **Control Structures**: Conditionals and loops\n` +
+                       `4. **Data Structures**: Arrays, objects, etc.\n\n` +
+                       `### Example (JavaScript):\n\`\`\`javascript\n// Function to calculate factorial\nfunction factorial(n) {\n  if (n === 0) return 1;\n  return n * factorial(n - 1);\n}\n\`\`\`\n` +
+                       `Would you like to explore a specific programming language?`;
+            }
+            else if (/hello|hi|hey/.test(lowerMsg)) {
+                return `**👋 Hello there!**\n\nI'm Buleii, your AI assistant with expertise in:\n\n` +
+                       `- **Technology**: Programming, AI, web development\n` +
+                       `- **Science**: Physics, biology, chemistry\n` +
+                       `- **Creative Writing**: Stories, poetry, content creation\n\n` +
+                       `How can I assist you today?`;
+            }
+            else if (/how are you/.test(lowerMsg)) {
+                return `**I'm functioning optimally!** ⚡\n\nAs an AI, I don't have feelings, but I'm ready to help with:\n\n` +
+                       `- Answering technical questions\n` +
+                       `- Explaining complex topics\n` +
+                       `- Generating creative content\n` +
+                       `- Solving problems\n\n` +
+                       `What would you like to work on together?`;
+            }
+            else if (/(speak|talk|voice|mic)/.test(lowerMsg)) {
+                return `**Voice Command Help** 🎤\n\nTo use voice input:\n\n` +
+                       `1. Click the microphone button\n` +
+                       `2. Speak clearly\n` +
+                       `3. I'll convert your speech to text\n` +
+                       `4. I'll respond with both text and voice\n\n` +
+                       `*Note: Works best in Chrome/Firefox with microphone access*`;
+            }
+            else {
+                return `**${userMessage}**\n\nHere's a detailed response:\n\n` +
+                       `1. **Key Concept**: ${getRandomResponse()}\n` +
+                       `2. **Examples**: ${getRandomExample()}\n` +
+                       `3. **Applications**: ${getRandomApplication()}\n\n` +
+                       `*In a full implementation with API access, I would provide a comprehensive, nuanced answer tailored to your specific question.*`;
+            }
+        }
+
+        function getRandomResponse() {
+            const responses = [
+                "This involves multiple interrelated components that work together",
+                "The core idea centers around fundamental principles that can be broken down",
+                "Modern approaches to this topic emphasize several key aspects",
+                "Historical context helps understand the evolution of this concept"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        function getRandomExample() {
+            const examples = [
+                "For instance, consider how this applies in real-world scenarios",
+                "A practical example would be the case where this is implemented",
+                "We can see this in action through common use cases like",
+                "One demonstration of this principle is evident when examining"
+            ];
+            return examples[Math.floor(Math.random() * examples.length)];
+        }
+
+        function getRandomApplication() {
+            const applications = [
+                "This is widely used in industries ranging from technology to healthcare",
+                "Practical implementations can be found in systems that require",
+                "Modern applications leverage this concept to achieve",
+                "The most innovative uses combine this with other techniques to"
+            ];
+            return applications[Math.floor(Math.random() * applications.length)];
+        }
+
+        // Load voices when available
+        window.speechSynthesis.onvoiceschanged = function() {
+            console.log('Voices loaded', window.speechSynthesis.getVoices());
+        };
+    </script>
+</body>
+</html>
